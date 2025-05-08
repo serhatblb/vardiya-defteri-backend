@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+
+    <!-- Basit Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Vardiya Defteri ‑ Giriş</title>
+</head>
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+
+<div class="bg-white p-6 rounded shadow-lg w-full max-w-sm">
+    <h1 class="text-2xl font-semibold mb-4 text-center">Giriş Yap</h1>
+
+    <form id="loginForm" class="space-y-4">
+        <div>
+            <label for="sicil" class="block text-sm font-medium">Sicil</label>
+            <input id="sicil" name="sicil" type="text" required
+                   class="mt-1 w-full px-3 py-2 border rounded"/>
+        </div>
+        <div>
+            <label for="sifre" class="block text-sm font-medium">Şifre</label>
+            <input id="sifre" name="sifre" type="password" required
+                   class="mt-1 w-full px-3 py-2 border rounded"/>
+        </div>
+        <button type="submit"
+                class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+            Login
+        </button>
+    </form>
+
+    <p id="errorMsg" class="mt-4 text-red-600 text-center"></p>
+</div>
+
+<script>
+    document.getElementById('loginForm')
+      .addEventListener('submit', async e => {
+        e.preventDefault();
+
+        // alanlardan değerleri al
+        const sicil  = document.getElementById('sicil').value.trim();
+        const sifre  = document.getElementById('sifre').value.trim();
+        const errEl  = document.getElementById('errorMsg');
+        errEl.textContent = '';
+
+        try {
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({ sicil, sifre })
+          });
+
+          // 200 OK değilse hata fırlat
+          if (!res.ok) {
+            // eğer JSON mesaj dönerse onu oku
+            let errText;
+            try {
+              const body = await res.json();
+              errText = body.message || body.error || JSON.stringify(body);
+            } catch(_) {
+              errText = `Sunucu hatası: ${res.status}`;
+            }
+            throw new Error(errText);
+          }
+
+          // başarılı ise JSON al ve token’ı sakla
+          const { token } = await res.json();
+          localStorage.setItem('vardiyaToken', token);
+
+          // örneğin notlar sayfasına yönlendir
+          window.location.href = '/notlar.html';
+        }
+        catch (err) {
+          errEl.textContent = err.message;
+        }
+      });
+</script>
+
+</body>
+</html>
