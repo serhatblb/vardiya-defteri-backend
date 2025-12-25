@@ -56,21 +56,28 @@ public class SecurityConfig {
     ) throws Exception {
         http
                 .authenticationProvider(customAuthProvider)
+                // CORS Ayarını devreye alıyoruz
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // CSRF kapalı (API'ler için gerekli)
                 .csrf(AbstractHttpConfigurer::disable)
+                // Session yok (JWT kullandığımız için Stateless)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        // 1. Herkese Açık Olanlar (Login ve Public Ayarlar)
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/settings/public").permitAll()
 
-                        // Kullanıcı işlemleri
+                        // Swagger/OpenAPI kullanıyorsan onlara da izin ver (İsteğe bağlı)
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+
+                        // 2. Kullanıcı İşlemleri
                         .requestMatchers(HttpMethod.PATCH, "/api/users/{id}/unblock").hasRole("SISTEM_YONETICISI")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("SISTEM_YONETICISI")
                         .requestMatchers(HttpMethod.GET, "/api/users/**").hasAnyRole("SISTEM_YONETICISI", "ISLETME_SORUMLUSU")
                         .requestMatchers(HttpMethod.POST, "/api/users/**").hasAnyRole("SISTEM_YONETICISI", "ISLETME_SORUMLUSU")
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("SISTEM_YONETICISI")
 
-                        // Vardiya işlemleri
+                        // 3. Vardiya İşlemleri
                         .requestMatchers(HttpMethod.GET, "/api/vardiyas/user/**")
                         .hasAnyRole("SISTEM_YONETICISI", "ISLETME_SORUMLUSU", "NORMAL_KULLANICI")
 
@@ -83,10 +90,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/vardiyas/**")
                         .hasAnyRole("SISTEM_YONETICISI", "ISLETME_SORUMLUSU")
 
-                        // Sistem ayarları
+                        // 4. Sistem Ayarları
                         .requestMatchers(HttpMethod.GET, "/api/settings").hasRole("SISTEM_YONETICISI")
                         .requestMatchers(HttpMethod.POST, "/api/settings").hasRole("SISTEM_YONETICISI")
 
+                        // Diğer her şey kimlik doğrulama ister
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -94,13 +102,26 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * 🔥 KRİTİK CORS AYARI 🔥
+     * Burası Vercel ve Render'ın konuşmasını sağlayan yerdir.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(List.of("http://localhost:4200"));
+
+        // ÖNEMLİ: Sadece localhost değil, her yerden gelen isteği kabul et (Pattern kullanıyoruz)
+        // allowedOrigins("*") hata verir, o yüzden allowedOriginPatterns("*") kullanıyoruz.
+        cfg.setAllowedOriginPatterns(List.of("*"));
+
+        // İzin verilen metodlar
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+        // İzin verilen başlıklar (Token vs.)
         cfg.setAllowedHeaders(List.of("*"));
-        cfg.setAllowCredentials(false);
+
+        // Credentials (Çerez/Token taşınmasına izin ver) - Bunu true yaptık!
+        cfg.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
