@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 
 @Configuration
 @RequiredArgsConstructor
@@ -22,42 +23,96 @@ public class TestDataLoader {
     @Bean
     public CommandLineRunner loadData() {
         return args -> {
-            // 🧹 1. ADIM: Önce temizlik! Tabloyu komple boşaltıyoruz.
-            // Böylece "Duplicate Key" hatası asla almayız.
+            // 🧹 1. ADIM: Temizlik
             userRepository.deleteAll();
-            System.out.println("🧹 Veritabanı temizlendi (Eski kullanıcılar silindi).");
+            System.out.println("🧹 Veritabanı temizlendi.");
 
-            // ➕ 2. ADIM: Kullanıcı 1 (Sistem Yöneticisi - Admin)
-            User admin = User.builder()
-                    .sicil("10148") // Senin sicil
+            String ortakSifre = passwordEncoder.encode("1234"); // Hepsinin şifresi: 1234
+
+            // --- SİSTEM YÖNETİCİLERİ ---
+            User serhat = User.builder()
+                    .sicil("10148")
                     .ad("Serhat")
-                    .soyad("Yılmaz")
-                    .unvan("Sistem Mühendisi")
+                    .soyad("Bülbül")
+                    .unvan("Mühendis")
                     .unite(Unite.KONVERTOR)
-                    .sifre(passwordEncoder.encode("1234")) // Şifre: 1234
+                    .sifre(ortakSifre)
                     .rol(Rol.SISTEM_YONETICISI)
                     .hesapAcilisTarihi(LocalDateTime.now())
-                    .blokeMi(false)
-                    .hataliGirisSayisi(0)
-                    .build();
-            userRepository.save(admin);
-            System.out.println("✅ Admin kullanıcı (10148) oluşturuldu.");
+                    .blokeMi(false).hataliGirisSayisi(0).build();
 
-            // ➕ 3. ADIM: Kullanıcı 2 (Normal Kullanıcı / İşletme Sorumlusu - Test için)
-            User user2 = User.builder()
-                    .sicil("2025") // Farklı bir sicil
-                    .ad("Ahmet")
-                    .soyad("Demir")
-                    .unvan("Formen")
-                    .unite(Unite.HADDEHANE) // Varsa böyle bir ünite, yoksa KONVERTOR yap
-                    .sifre(passwordEncoder.encode("1234")) // Şifre: 1234
-                    .rol(Rol.ISLETME_SORUMLUSU) // Farklı bir rol
+            User hatice = User.builder()
+                    .sicil("1000")
+                    .ad("Hatice")
+                    .soyad("Eren")
+                    .unvan("Mühendis")
+                    .unite(Unite.KONVERTOR)
+                    .sifre(ortakSifre)
+                    .rol(Rol.SISTEM_YONETICISI)
                     .hesapAcilisTarihi(LocalDateTime.now())
-                    .blokeMi(false)
-                    .hataliGirisSayisi(0)
-                    .build();
-            userRepository.save(user2);
-            System.out.println("✅ İkinci kullanıcı (2025) oluşturuldu.");
+                    .blokeMi(false).hataliGirisSayisi(0).build();
+
+            User buse = User.builder()
+                    .sicil("1001")
+                    .ad("Buse")
+                    .soyad("Özcen")
+                    .unvan("Mühendis")
+                    .unite(Unite.KONVERTOR)
+                    .sifre(ortakSifre)
+                    .rol(Rol.SISTEM_YONETICISI)
+                    .hesapAcilisTarihi(LocalDateTime.now())
+                    .blokeMi(false).hataliGirisSayisi(0).build();
+
+            User adem = User.builder()
+                    .sicil("1002")
+                    .ad("Adem")
+                    .soyad("Çetinkaya")
+                    .unvan("Başmühendis")
+                    .unite(Unite.KONVERTOR)
+                    .sifre(ortakSifre)
+                    .rol(Rol.SISTEM_YONETICISI)
+                    .hesapAcilisTarihi(LocalDateTime.now())
+                    .blokeMi(false).hataliGirisSayisi(0).build();
+
+            // --- İŞLETME SORUMLUSU ---
+            User hakan = User.builder()
+                    .sicil("2001")
+                    .ad("Hakan")
+                    .soyad("Akıncı")
+                    .unvan("Danışman")
+                    .unite(Unite.KONVERTOR) // Varsa CELIKHANE de yapabilirsin
+                    .sifre(ortakSifre)
+                    .rol(Rol.ISLETME_SORUMLUSU)
+                    .hesapAcilisTarihi(LocalDateTime.now())
+                    .blokeMi(false).hataliGirisSayisi(0).build();
+
+            // --- NORMAL KULLANICILAR ---
+            User isci = User.builder()
+                    .sicil("3001")
+                    .ad("Mehmet")
+                    .soyad("Demir")
+                    .unvan("İşçi")
+                    .unite(Unite.KONVERTOR)
+                    .sifre(ortakSifre)
+                    .rol(Rol.NORMAL_KULLANICI)
+                    .hesapAcilisTarihi(LocalDateTime.now())
+                    .blokeMi(false).hataliGirisSayisi(0).build();
+
+            User formen = User.builder()
+                    .sicil("3002")
+                    .ad("Ali")
+                    .soyad("Çelik")
+                    .unvan("Formen")
+                    .unite(Unite.KONVERTOR)
+                    .sifre(ortakSifre)
+                    .rol(Rol.NORMAL_KULLANICI)
+                    .hesapAcilisTarihi(LocalDateTime.now())
+                    .blokeMi(false).hataliGirisSayisi(0).build();
+
+            // Hepsini kaydet
+            userRepository.saveAll(Arrays.asList(serhat, hatice, buse, adem, hakan, isci, formen));
+
+            System.out.println("✅ Tüm test kullanıcıları (7 Kişi) başarıyla oluşturuldu.");
         };
     }
 }
